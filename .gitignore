@@ -1,0 +1,5 @@
+teapot/
+compile_commands.json
+.cache
+.bundle/
+gems.locked
