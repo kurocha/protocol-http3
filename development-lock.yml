@@ -15,7 +15,7 @@ build-compile-commands:
   :commit: 1c4b18f86d45426d7dd284c28bc53837e5694b6c
   :branch: main
 protocol-quic:
-  :commit: 4fa6aaa1b2dcb8f493d4c58535c0417e94095f27
+  :commit: 9900a7fe0407a2a4ae0a8e0508d6ad8d52f66c27
   :branch: main
 nghttp3:
   :commit: 922c2aaca406840a63ce2c4a808d9c888538671d
