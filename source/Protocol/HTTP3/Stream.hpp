@@ -30,6 +30,12 @@ namespace Protocol
 			void reset(std::size_t final_size, std::uint64_t error_code) override;
 			void stop_sending(std::uint64_t error_code) override;
 
+			// Input side:
+			virtual void receive_input(const void *data, std::size_t size);
+			virtual void finish_input();
+
+			// Output side:
+			virtual void acknowledge_output(std::size_t length);
 		protected:
 			Session & _session;
 		};

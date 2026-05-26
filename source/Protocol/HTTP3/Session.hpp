@@ -58,7 +58,7 @@ namespace Protocol
 			void resume_stream(Protocol::QUIC::StreamID stream_id);
 
 			void submit_request(Protocol::QUIC::StreamID stream_id, const nghttp3_nv *headers, std::size_t count, const nghttp3_data_reader *reader = nullptr, void *stream_data = nullptr);
-			void submit_response(Protocol::QUIC::StreamID stream_id, const nghttp3_nv *headers, std::size_t count, const nghttp3_data_reader *reader = nullptr);
+			void submit_response(Protocol::QUIC::StreamID stream_id, const nghttp3_nv *headers, std::size_t count, const nghttp3_data_reader *reader = nullptr, void *stream_data = nullptr);
 			void submit_trailers(Protocol::QUIC::StreamID stream_id, const nghttp3_nv *headers, std::size_t count);
 			void submit_shutdown_notice();
 

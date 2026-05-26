@@ -25,6 +25,10 @@ namespace Protocol
 			void handshake_completed() override;
 			Protocol::QUIC::Connection::Status send_stream_data() override;
 
+			void stream_data_acknowledged(Protocol::QUIC::StreamID stream_id, std::uint64_t size, void *stream_data) override;
+			void stream_data_received(Protocol::QUIC::StreamID stream_id, const std::uint8_t *data, std::size_t size, void *stream_data) override;
+			void stream_finished(Protocol::QUIC::StreamID stream_id, void *stream_data) override;
+
 			void stop_sending(Protocol::QUIC::StreamID stream_id, std::uint64_t error_code, void *stream_data) override;
 			void reset_stream(Protocol::QUIC::StreamID stream_id, std::uint64_t error_code, void *stream_data) override;
 

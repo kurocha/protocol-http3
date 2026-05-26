@@ -410,9 +410,13 @@ namespace Protocol
 			check(nghttp3_conn_submit_request(_connection, stream_id, headers, count, reader, stream_data), "nghttp3_conn_submit_request");
 		}
 
-		void Session::submit_response(Protocol::QUIC::StreamID stream_id, const nghttp3_nv *headers, std::size_t count, const nghttp3_data_reader *reader)
+		void Session::submit_response(Protocol::QUIC::StreamID stream_id, const nghttp3_nv *headers, std::size_t count, const nghttp3_data_reader *reader, void *stream_data)
 		{
 			check(nghttp3_conn_submit_response(_connection, stream_id, headers, count, reader), "nghttp3_conn_submit_response");
+
+			if (stream_data) {
+				check(nghttp3_conn_set_stream_user_data(_connection, stream_id, stream_data), "nghttp3_conn_set_stream_user_data");
+			}
 		}
 
 		void Session::submit_trailers(Protocol::QUIC::StreamID stream_id, const nghttp3_nv *headers, std::size_t count)

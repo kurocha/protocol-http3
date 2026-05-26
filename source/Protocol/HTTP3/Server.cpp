@@ -7,7 +7,7 @@
 //
 
 #include "Server.hpp"
-#include "Stream.hpp"
+#include "BufferedStream.hpp"
 
 #include <Protocol/QUIC/Socket.hpp>
 
@@ -30,7 +30,7 @@ namespace Protocol
 
 		Protocol::QUIC::Stream * Server::create_stream(Protocol::QUIC::StreamID stream_id)
 		{
-			return new Stream(*this, *this, stream_id);
+			return new BufferedStream(*this, *this, stream_id);
 		}
 
 		void Server::handshake_completed()
@@ -99,6 +99,42 @@ namespace Protocol
 			}
 
 			return Status::OK;
+		}
+
+		void Server::stream_data_acknowledged(Protocol::QUIC::StreamID stream_id, std::uint64_t size, void *stream_data)
+		{
+			(void)stream_data;
+
+			auto *stream = reinterpret_cast<Protocol::QUIC::Stream *>(ngtcp2_conn_get_stream_user_data(Protocol::QUIC::Server::native_handle(), stream_id));
+			auto *http_stream = dynamic_cast<Stream *>(stream);
+
+			if (http_stream) {
+				http_stream->acknowledge_output(size);
+			}
+		}
+
+		void Server::stream_data_received(Protocol::QUIC::StreamID stream_id, const std::uint8_t *data, std::size_t size, void *stream_data)
+		{
+			(void)stream_data;
+
+			auto *stream = reinterpret_cast<Protocol::QUIC::Stream *>(ngtcp2_conn_get_stream_user_data(Protocol::QUIC::Server::native_handle(), stream_id));
+			auto *http_stream = dynamic_cast<Stream *>(stream);
+
+			if (http_stream) {
+				http_stream->receive_input(data, size);
+			}
+		}
+
+		void Server::stream_finished(Protocol::QUIC::StreamID stream_id, void *stream_data)
+		{
+			(void)stream_data;
+
+			auto *stream = reinterpret_cast<Protocol::QUIC::Stream *>(ngtcp2_conn_get_stream_user_data(Protocol::QUIC::Server::native_handle(), stream_id));
+			auto *http_stream = dynamic_cast<Stream *>(stream);
+
+			if (http_stream) {
+				http_stream->finish_input();
+			}
 		}
 
 		void Server::stop_sending(Protocol::QUIC::StreamID stream_id, std::uint64_t error_code, void *stream_data)

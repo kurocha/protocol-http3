@@ -8,6 +8,7 @@
 
 #include <UnitTest/UnitTest.hpp>
 
+#include <Protocol/HTTP3/BufferedStream.hpp>
 #include <Protocol/HTTP3/Session.hpp>
 #include <Protocol/HTTP3/Server.hpp>
 #include <Protocol/QUIC/Configuration.hpp>
@@ -29,8 +30,10 @@ namespace Protocol
 
 			std::size_t settings_count = 0;
 			std::vector<std::pair<std::string, std::string>> headers;
+			std::vector<std::string> chunks;
 			std::size_t headers_finished_count = 0;
 			std::size_t stream_finished_count = 0;
+			std::size_t acknowledged = 0;
 
 			void settings_received(const nghttp3_proto_settings *settings) override
 			{
@@ -70,6 +73,25 @@ namespace Protocol
 				(void)stream_data;
 
 				stream_finished_count += 1;
+			}
+
+			void stream_data_received(Protocol::QUIC::StreamID stream_id, const std::uint8_t *data, std::size_t size, void *stream_data) override
+			{
+				(void)stream_id;
+				(void)stream_data;
+
+				chunks.emplace_back(reinterpret_cast<const char *>(data), size);
+			}
+
+			void stream_data_acknowledged(Protocol::QUIC::StreamID stream_id, std::uint64_t size, void *stream_data) override
+			{
+				(void)stream_id;
+
+				acknowledged += size;
+
+				if (stream_data) {
+					static_cast<OutputBuffer *>(stream_data)->acknowledge(size);
+				}
 			}
 		};
 
@@ -191,6 +213,55 @@ namespace Protocol
 					examiner.expect(client.headers.size()).to(be == response_headers.size());
 					examiner.expect(client.headers_finished_count).to(be == 1);
 					examiner.expect(client.stream_finished_count).to(be == 1);
+				}
+			},
+
+			{"it can exchange chunked response data",
+				[](UnitTest::Examiner & examiner) {
+					RecordingSession client(Session::Role::CLIENT);
+					RecordingSession server(Session::Role::SERVER);
+
+					client.bind_control_stream(2);
+					client.bind_qpack_streams(6, 10);
+
+					server.bind_control_stream(3);
+					server.bind_qpack_streams(7, 11);
+
+					transfer(client, server);
+					transfer(server, client);
+
+					auto request_headers = std::vector<nghttp3_nv>{
+						header(":method", "GET"),
+						header(":scheme", "https"),
+						header(":authority", "localhost"),
+						header(":path", "/"),
+					};
+
+					client.submit_request(0, request_headers.data(), request_headers.size());
+					transfer(client, server);
+
+					OutputBuffer output;
+
+					auto response_headers = std::vector<nghttp3_nv>{
+						header(":status", "200"),
+					};
+
+					server.submit_response(0, response_headers.data(), response_headers.size(), output.reader(), &output);
+
+					output.append("Hello");
+					output.append(" ");
+					output.append("World!");
+					output.close();
+
+					transfer(server, client);
+
+					examiner.expect(client.chunks.size()).to(be == 3);
+					examiner.expect(client.chunks[0]).to(be == "Hello");
+					examiner.expect(client.chunks[1]).to(be == " ");
+					examiner.expect(client.chunks[2]).to(be == "World!");
+					examiner.expect(client.stream_finished_count).to(be == 1);
+					examiner.expect(output.pending()).to(be == 0);
+					examiner.expect(output.retained()).to(be == 0);
 				}
 			},
 		};

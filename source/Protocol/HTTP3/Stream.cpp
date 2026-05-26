@@ -41,6 +41,21 @@ namespace Protocol
 			_session.add_ack_offset(_stream_id, length);
 		}
 
+		void Stream::receive_input(const void *data, std::size_t size)
+		{
+			(void)data;
+			(void)size;
+		}
+
+		void Stream::finish_input()
+		{
+		}
+
+		void Stream::acknowledge_output(std::size_t length)
+		{
+			(void)length;
+		}
+
 		void Stream::close(std::uint32_t flags, std::uint64_t error_code)
 		{
 			(void)flags;
